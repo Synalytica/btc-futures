@@ -6,9 +6,23 @@
 """
 import argparse
 from datetime import time
+from enum import Enum
 
 import pandas as pd
 import talib
+
+
+class Signal(Enum):
+    """Signal generated"""
+    NULL = 0
+    LONG = 1
+    SHORT = 2
+
+
+class Status(Enum):
+    """Win/Loss"""
+    LOSS = 0
+    WIN = 1
 
 
 def collect_args() -> argparse.Namespace:
@@ -43,7 +57,7 @@ def main():
     df['adx'] = talib.ADX(df.High, df.Low,
                           df.Close, timeperiod=args.adx)
 
-    signal, status, inPosition, exited = None, None, False, False
+    signal, status, inPosition, exited = Signal.NULL, None, False, False
     sl, tp, buyPrice, win, loss = 0, 0, 0, 0, 0
     orders = []
     orderTime = df.iloc[0].Timestamp
@@ -54,57 +68,55 @@ def main():
             f"Processing | W:{win}|L:{loss} [{i + 1}/{n_candles}]", end="\r", flush=True)
 
         # check entry signal condition
-        if signal is None and not inPosition:
+        if signal == Signal.NULL and not inPosition:
             if df.at[i, 'emaFast'] > df.at[i, 'emaSlow'] and \
                     df.at[i - 1, 'emaFast'] < df.at[i - 1, 'emaSlow'] and \
                     df.at[i, 'adx'] < 40 and df.at[i, 'adx'] > 30:
-                signal = "Short"
+                signal = Signal.SHORT
             elif df.at[i, 'emaFast'] < df.at[i, 'emaSlow'] and \
                     df.at[i - 1, 'emaFast'] > df.at[i - 1, 'emaSlow'] and \
                     df.at[i, 'adx'] < 40 and df.at[i, 'adx'] > 30:
-                signal = "Long"
+                signal = Signal.LONG
 
         # enter if signal
         elif not inPosition:
             buyPrice = (df.at[i, 'Close'] + df.at[i, 'Open']) / 2
             inPosition = True
             orderTime = df.at[i, 'Timestamp']
-            if signal == "Long":
+            if signal == Signal.LONG:
                 tp = buyPrice + (args.sl * args.rr)
                 sl = buyPrice - args.sl
-            elif signal == "Short":
+            elif signal == Signal.SHORT:
                 tp = buyPrice - (args.sl * args.rr)
                 sl = buyPrice + args.sl
 
         # wait for exit condition
         else:
-            if signal == "Long":
+            if signal == Signal.LONG:
                 if tp <= df.at[i, 'High']:
-                    status = 'W'
+                    status = Status.WIN
                     exited = True
                 elif sl >= df.at[i, 'Low']:
-                    status = 'L'
+                    status = Status.LOSS
                     exited = True
-            elif signal == "Short":
+            elif signal == Signal.SHORT:
                 if tp >= df.at[i, 'Low']:
-                    status = 'W'
+                    status = Status.WIN
                     exited = True
                 elif sl <= df.at[i, 'High']:
-                    status = 'L'
+                    status = Status.LOSS
                     exited = True
 
             # reset variables for next trade if exited
             if exited:
-                win += status == 'W'
-                loss += status == 'L'
+                win += status == Status.WIN
+                loss += status == Status.LOSS
                 orders.append({
                     'Timestamp': orderTime,
                     'BuyPrice': buyPrice,
-                    'TP': tp,
-                    'SL': sl,
                     'W/L': status
                 })
-                signal, status, inPosition, exited = None, None, False, False
+                signal, status, inPosition, exited = Signal.NULL, None, False, False
                 sl, tp, buyPrice = 0, 0, 0
 
     total = win + loss
