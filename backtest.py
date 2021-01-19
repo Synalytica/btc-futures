@@ -112,9 +112,13 @@ def main():
                 win += status == Status.WIN
                 loss += status == Status.LOSS
                 orders.append({
-                    'Timestamp': orderTime,
-                    'BuyPrice': buyPrice,
-                    'W/L': status
+                    'entry_time': orderTime,
+                    'exit_time': df.at[i, 'Timestamp'],
+                    'trade_type': "LONG" if signal == Signal.LONG else "SHORT",
+                    'exit_high': df.at[i, 'High'],
+                    'exit_low': df.at[i, 'Low'],
+                    'entry_price': buyPrice,
+                    'profit': status.value
                 })
                 signal, status, inPosition, exited = Signal.NULL, None, False, False
                 sl, tp, buyPrice = 0, 0, 0
@@ -123,7 +127,7 @@ def main():
     print(
         f"\nT: {total} :: W: {win} | L: {loss} [{round(win / total * 100, 2)}%]")
     orders = pd.DataFrame(orders)
-    orders.to_csv(args.output, float_format="%.3f")
+    orders.to_csv(args.output, index=False, float_format="%.3f")
 
 
 if __name__ == "__main__":
