@@ -27,9 +27,9 @@ class Status(Enum):
 
 def collect_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", type=str, default="binance_data.csv",
+    parser.add_argument("-i", "--input", type=str, default="data/binance_data.csv",
                         help="OHLCV Data")
-    parser.add_argument("-o", "--output", type=str, default="orders.csv",
+    parser.add_argument("-o", "--output", type=str, default="data/orders.csv",
                         help="Order information data")
 
     parser.add_argument("--sl", type=int, default=100,
