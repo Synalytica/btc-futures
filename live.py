@@ -6,12 +6,14 @@
 
 """
 from enum import Enum
+import os
 import sys
 from time import sleep
 from typing import Dict
 
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
+from binance.exceptions import BinanceAPIException
 from twisted.internet import reactor
 
 
@@ -39,7 +41,9 @@ def stream_callback(msg: Dict):
 
 
 def main():
-    client = Client()
+    API_KEY = os.getenv("BINANCE_API_KEY", None)
+    API_SECRET = os.getenv("BINANCE_API_SECRET", None)
+    client = Client(api_key=API_KEY, api_secret=API_SECRET)
 
     bm = BinanceSocketManager(client)
     sockets = [
@@ -47,15 +51,23 @@ def main():
         bm.start_symbol_ticker_futures_socket('BTCUSDT', stream_callback),  # last price stream
     ]
 
+    print(client.get_asset_balance("BTC"),
+          client.get_asset_balance("USDT"), sep="\n")
+
     try:
         if all(sockets):
             bm.start()
         else:
             raise KeyboardInterrupt
     except KeyboardInterrupt:
-        map(bm.stop_socket, sockets)
+        map(lambda socket: bm.stop_socket if socket else None, sockets)
         bm.close()
         reactor.stop()
 
+
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except BinanceAPIException as e:
+        sys.stderr.write(f"[error] Binance: {e}\n")
+

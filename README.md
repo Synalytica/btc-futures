@@ -43,6 +43,14 @@ optional arguments:
 
 - Example: `./analysis.py -i data/orders.csv`
 
+### `live.py`
+
+- Add `$BINANCE_API_KEY` and `$BINANCE_API_SECRET` to your environment
+
+```bash
+BINANCE_API_KEY=your-api-key BINANCE_API_SECRET=your-api-secret ./live.py
+```
+
 ## Development
 
 ```bash
