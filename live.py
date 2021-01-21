@@ -12,6 +12,9 @@ import sys
 from time import sleep, gmtime
 from threading import Thread
 from typing import Dict
+import asyncpg
+import asyncio
+import datetime
 
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
@@ -22,6 +25,36 @@ from twisted.internet import reactor
 last_price, mark_price, vol = (-1., -1.), -1., 0.
 new_candle = False
 candles = [[]]
+
+
+async def save_to_db(table, values):
+    # Establish a connection to an existing database named "test"
+    # as a "postgres" user.
+    conn = await asyncpg.connect('postgresql://postgres@localhost/postgres', password='password')
+    # Insert a record into the created table.
+    if table == "ticker":
+        structTime = values['timestamp']
+        timestamp = datetime.datetime(*structTime[:6])
+        mark = values['mark']
+        ask = values['ask']
+        bid = values['bid']
+        vol = values['vol']
+        await conn.execute('''
+            INSERT INTO ticker(timestamp,mark,ask,bid,vol) VALUES($1, $2, $3, $4, $5)
+            ''', timestamp, mark, ask, bid, vol)
+    elif table == "ohlc":
+        structTime = values['t']
+        timestamp = datetime.datetime(*structTime[:6])
+        open = values['o']
+        high = values['h']
+        low = values['l']
+        close = values['c']
+        volume = values['v']
+        await conn.execute('''
+            INSERT INTO ohlc(timestamp,open,high,low,close,volume) VALUES($1, $2, $3, $4, $5, $6)
+            ''', timestamp, open, high, low, close, volume)
+    # Close the connection.
+    await conn.close()
 
 
 class Stream(str, Enum):
@@ -56,7 +89,11 @@ class CandleMaker(Thread):
                     'v': (v := sum(map(lambda tick: tick['vol'], cur_candle))),
                 }
                 # TODO dump candle to db
-                print(f"{timestamp.tm_hour}:{timestamp.tm_min}\t::\tO:{o: .4f} H:{h: .4f} L:{l: .4f} C:{c: .4f} V:{v: .5f}")
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(save_to_db("ohlc", candle))
+                print(
+                    f"{timestamp.tm_hour}:{timestamp.tm_min}\t::\tO:{o: .4f} H:{h: .4f} L:{l: .4f} C:{c: .4f} V:{v: .5f}")
                 prev_timestamp = timestamp
 
 
@@ -77,6 +114,10 @@ def stream_callback(msg: Dict):
             'bid': bid,
             'vol': vol
         }
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(
+            save_to_db("ticker", datapoint))
         if timestamp.tm_sec:
             candles[-1].append(datapoint)
         else:
