@@ -1,14 +1,42 @@
 # BTC Futures Strategy
 
-## Installation
+## Installation & Setup
 
+### Dependencies
+
+- Install the script dependencies
 ```bash
 pip3 install -r requirements.txt
 ```
 
+### Database
+
+- Populate the environment with necessary variables (as outlined in
+  `env.example`)
+
+- Run the docker container
+
+```bash
+docker run --rm -d -e POSTGRES_USER=$POSTGRES_USER -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD -e POSTGRES_DB=$POSTGRES_DB -v $PWD/data/postgres:/var/lib/postgresql/data -v $PWD/config/db/:/docker-entrypoint-initdb.d/ --name timescaledb -p 5432:5432 timescale/timescaledb:2.0.0-pg12
+```
+
+- Test your database
+
+```bash
+./utils/test.py
+```
+
 ## Running
 
+### `live.py`
 
+- Populate the environment with necessary variables (as outlined in
+  `env.example`)
+
+```bash
+./live.py
+```
+ 
 ### `backtest.py`
 
 ```bash
@@ -30,7 +58,7 @@ optional arguments:
 
 - Example: `./backtest.py -i data/binance_data.csv -o data/orders.csv`
 
-### `analysis.py`
+### `utils/analysis.py`
 
 ```bash
 usage: analysis.py [-h] [-i INPUT]
@@ -43,18 +71,11 @@ optional arguments:
 
 - Example: `./analysis.py -i data/orders.csv`
 
-### `live.py`
-
-- Add `$BINANCE_API_KEY` and `$BINANCE_API_SECRET` to your environment
-
-```bash
-BINANCE_API_KEY=your-api-key BINANCE_API_SECRET=your-api-secret ./live.py
-```
-
 ## Development
 
 ```bash
 pip3 install pip-tools
 pip-compile requirements.in > requirements.txt
 ```
+
 
