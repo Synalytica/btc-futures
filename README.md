@@ -1,4 +1,5 @@
 # BTC Futures Strategy
+![lint-status](https://github.com/Synalytica/btc-futures/workflows/Python%20application/badge.svg)
 
 ## Installation & Setup
 
