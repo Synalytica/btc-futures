@@ -28,9 +28,9 @@ candles = [[]]
 
 
 async def save_to_db(table, values):
-    # Establish a connection to an existing database named "test"
-    # as a "postgres" user.
-    conn = await asyncpg.connect('postgresql://postgres@localhost/postgres', password='password')
+    DATABASE_URI = os.getenv(
+        "DATABASE_URI", 'postgresql://postgres@localhost/test')
+    conn = await asyncpg.connect(DATABASE_URI, timeout=60)
     # Insert a record into the created table.
     if table == "ticker":
         structTime = values['timestamp']
@@ -88,7 +88,6 @@ class CandleMaker(Thread):
                     'c': (c := cur_candle[-1]['mark']),
                     'v': (v := sum(map(lambda tick: tick['vol'], cur_candle))),
                 }
-                # TODO dump candle to db
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 loop.run_until_complete(save_to_db("ohlc", candle))
