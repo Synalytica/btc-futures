@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS ohlc (
   high      DOUBLE PRECISION    NOT NULL,
   low       DOUBLE PRECISION    NOT NULL,
   close     DOUBLE PRECISION    NOT NULL,
-  volume    DOUBLE PRECISION    NOT NULL
+  vol    DOUBLE PRECISION    NOT NULL
 );
 SELECT create_hypertable('ticker', 'timestamp');
 SELECT create_hypertable('ohlc', 'timestamp');

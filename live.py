@@ -7,57 +7,29 @@
 """
 from enum import Enum
 import os
-from pprint import pprint
 import sys
-from time import sleep, gmtime
+from time import gmtime
 from threading import Thread
-from typing import Dict
-import asyncpg
-import asyncio
-import datetime
+from datetime import datetime
+from decimal import Decimal
 
+import asyncpg
+from asyncio import Queue, get_event_loop
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
 from binance.exceptions import BinanceAPIException
 from twisted.internet import reactor
 
 
-last_price, mark_price, vol = (-1., -1.), -1., 0.
+last_price, mark_price = (Decimal('-1.'), Decimal('-1.')), Decimal('-1.')
+vol = Decimal('0.')
 new_candle = False
 candles = [[]]
-
-
-async def save_to_db(table, values):
-    DATABASE_URI = os.getenv(
-        "DATABASE_URI", 'postgresql://postgres@localhost/test')
-    conn = await asyncpg.connect(DATABASE_URI, timeout=60)
-    # Insert a record into the created table.
-    if table == "ticker":
-        structTime = values['timestamp']
-        timestamp = datetime.datetime(*structTime[:6])
-        mark = values['mark']
-        ask = values['ask']
-        bid = values['bid']
-        vol = values['vol']
-        await conn.execute('''
-            INSERT INTO ticker(timestamp,mark,ask,bid,vol) VALUES($1, $2, $3, $4, $5)
-            ''', timestamp, mark, ask, bid, vol)
-    elif table == "ohlc":
-        structTime = values['t']
-        timestamp = datetime.datetime(*structTime[:6])
-        open = values['o']
-        high = values['h']
-        low = values['l']
-        close = values['c']
-        volume = values['v']
-        await conn.execute('''
-            INSERT INTO ohlc(timestamp,open,high,low,close,volume) VALUES($1, $2, $3, $4, $5, $6)
-            ''', timestamp, open, high, low, close, volume)
-    # Close the connection.
-    await conn.close()
+ohlc, ticks = Queue(), Queue()
 
 
 class Stream(str, Enum):
+    """Types of streams to fetch data from"""
     MARK_PRICE = "btcusdt@markPrice@1s"
     LAST_PRICE = "btcusdt@bookTicker"
 
@@ -76,61 +48,97 @@ class CandleMaker(Thread):
         prev_timestamp = None
         while True:
             if len(cur_candle := candles[-1]) == 60 and \
-                    (timestamp := cur_candle[0]['timestamp']) != prev_timestamp:
+                    (timestamp := cur_candle[0]['t']) != prev_timestamp:
                 # OHLC calculation
                 # NOTE: potentially calculate as `lambda tick: (tick['ask'] +
                 # tick['bid'] / 2)` instead
                 candle = {
                     't': timestamp,
-                    'o': (o := cur_candle[0]['mark']),
-                    'h': (h := max(map(lambda tick: tick['mark'], cur_candle))),
-                    'l': (l := min(map(lambda tick: tick['mark'], cur_candle))),
-                    'c': (c := cur_candle[-1]['mark']),
-                    'v': (v := sum(map(lambda tick: tick['vol'], cur_candle))),
+                    'o': (o := cur_candle[0]['m']),
+                    'h': (h := max(map(lambda tick: tick['m'], cur_candle))),
+                    'l': (l := min(map(lambda tick: tick['m'], cur_candle))),
+                    'c': (c := cur_candle[-1]['m']),
+                    'v': (v := sum(map(lambda tick: tick['v'], cur_candle))),
                 }
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(save_to_db("ohlc", candle))
+                ohlc.put_nowait(candle)
                 print(
                     f"{timestamp.tm_hour}:{timestamp.tm_min}\t::\tO:{o: .4f} H:{h: .4f} L:{l: .4f} C:{c: .4f} V:{v: .5f}")
                 prev_timestamp = timestamp
 
 
-def stream_callback(msg: Dict):
+async def dump_to_db():
+    """Save candles to db"""
+    # set delays for writing of chunks
+    candle_delay = 1
+    ticker_delay = 10
+    _candles = []
+    _ticks = []
+    DATABASE_URI = os.getenv("DATABASE_URI",
+                         'postgresql://postgres:postgres@localhost/test')
+    pool = await asyncpg.create_pool(DATABASE_URI, timeout=60)
+    while True:
+        if not ticks.empty():
+            data = await ticks.get()
+            timestamp = datetime(*data['t'][:6])
+            row = [timestamp, data['m'], data['a'], data['b'], data['v']]
+            _ticks.append(row)
+        if not ohlc.empty():
+            data = await ohlc.get()
+            timestamp = datetime(*data['t'][:6])
+            row = [timestamp, data['o'], data['h'], data['l'], data['c'], data['v']]
+            _candles.append(row)
+
+        if len(_candles) > candle_delay:
+            conn = await pool.acquire()
+            await conn.executemany("""
+                INSERT INTO ohlc(timestamp, open, high, low, close, vol)
+                    VALUES($1, $2, $3, $4, $5, $6)
+            """, _candles)
+            _candles = list()
+            await conn.close()
+        if len(_ticks) > ticker_delay:
+            conn = await pool.acquire()
+            await conn.executemany("""
+                INSERT INTO ticker(timestamp, mark, ask, bid, vol)
+                    VALUES($1, $2, $3, $4, $5)
+            """, _ticks)
+            _ticks = list()
+            await conn.close()
+
+
+def stream_callback(msg: dict):
     """function processing the stream messages"""
     global last_price, mark_price, vol, candles
     timestamp = gmtime(msg['data']['E'] / 1000)
     if msg['stream'] == Stream.LAST_PRICE:
-        last_price = float(msg['data']['a']), float(msg['data']['b'])
-        vol += min(float(msg['data']['B']), float(msg['data']['A']))
+        last_price = Decimal(msg['data']['a']), Decimal(msg['data']['b'])
+        vol += min(Decimal(msg['data']['B']), Decimal(msg['data']['A']))
     else:
-        mark_price = float(msg['data']['p'])
+        mark_price = Decimal(msg['data']['p'])
         ask, bid = last_price
         datapoint = {
-            'timestamp': timestamp,
-            'mark': mark_price,
-            'ask': ask,
-            'bid': bid,
-            'vol': vol
+            't': timestamp,
+            'm': mark_price,
+            'a': ask,
+            'b': bid,
+            'v': vol
         }
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(
-            save_to_db("ticker", datapoint))
+        ticks.put_nowait(datapoint)
         if timestamp.tm_sec:
             candles[-1].append(datapoint)
         else:
             candles.append([datapoint])
-        vol = 0.  # reset volume for the next second
+        vol = Decimal('0.')  # reset volume for the next second
 
 
-def main():
+async def main():
     API_KEY = os.getenv("BINANCE_API_KEY", None)
     API_SECRET = os.getenv("BINANCE_API_SECRET", None)
     client = Client(api_key=API_KEY, api_secret=API_SECRET)
 
     bm = BinanceSocketManager(client)
     candle_agent = CandleMaker("candle_maker")
+
     sockets = [
         bm.start_symbol_mark_price_socket(
             'BTCUSDT', stream_callback),  # mark price stream
@@ -145,6 +153,7 @@ def main():
         if all(sockets):
             bm.start()
             candle_agent.start()
+            await dump_to_db()
         else:
             raise KeyboardInterrupt
     except KeyboardInterrupt:
@@ -156,6 +165,6 @@ def main():
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
+        get_event_loop().run_until_complete(main())
     except BinanceAPIException as e:
         sys.stderr.write(f"[error] Binance: {e}\n")
