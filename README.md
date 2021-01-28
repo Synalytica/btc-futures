@@ -29,16 +29,18 @@ docker run --rm -d -e POSTGRES_USER=$POSTGRES_USER -e POSTGRES_PASSWORD=$POSTGRE
 
 ## Running
 
-### `live.py`
+### `run.py`
 
 - Populate the environment with necessary variables (as outlined in
   `env.example`)
 
+- Make sure the database is running (refer to above section)
+
 ```bash
-./live.py
+./run.py
 ```
  
-### `backtest.py`
+### `./utils/backtest.py`
 
 ```bash
 usage: backtest.py [-h] [-i INPUT] [-o OUTPUT] [-s EMA_SLOW] [-f EMA_FAST]
