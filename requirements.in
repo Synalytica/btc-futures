@@ -3,3 +3,4 @@ ta-lib
 python-binance
 twisted
 asyncpg
+aio_pika

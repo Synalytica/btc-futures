@@ -4,105 +4,46 @@
 #
 #    pip-compile requirements.in
 #
-asyncpg==0.21.0
-    # via -r requirements.in
-attrs==20.3.0
-    # via
-    #   automat
-    #   service-identity
-    #   twisted
-autobahn==20.12.3
-    # via python-binance
-automat==20.2.0
-    # via twisted
-certifi==2020.12.5
-    # via
-    #   python-binance
-    #   requests
-cffi==1.14.4
-    # via cryptography
-chardet==4.0.0
-    # via requests
-constantly==15.1.0
-    # via twisted
-cryptography==3.3.1
-    # via
-    #   autobahn
-    #   pyopenssl
-    #   python-binance
-    #   service-identity
-dateparser==1.0.0
-    # via python-binance
-hyperlink==21.0.0
-    # via
-    #   autobahn
-    #   twisted
-idna==2.10
-    # via
-    #   hyperlink
-    #   requests
-incremental==17.5.0
-    # via twisted
-numpy==1.19.5
-    # via
-    #   pandas
-    #   ta-lib
-pandas==1.2.1
-    # via -r requirements.in
-pyasn1-modules==0.2.8
-    # via service-identity
-pyasn1==0.4.8
-    # via
-    #   pyasn1-modules
-    #   service-identity
-pycparser==2.20
-    # via cffi
-pyhamcrest==2.0.2
-    # via twisted
-pyopenssl==20.0.1
-    # via python-binance
-python-binance==0.7.9
-    # via -r requirements.in
-python-dateutil==2.8.1
-    # via
-    #   dateparser
-    #   pandas
-pytz==2020.5
-    # via
-    #   dateparser
-    #   pandas
-    #   tzlocal
-regex==2020.11.13
-    # via dateparser
-requests==2.25.1
-    # via python-binance
-service-identity==18.1.0
-    # via python-binance
-six==1.15.0
-    # via
-    #   automat
-    #   cryptography
-    #   pyopenssl
-    #   python-binance
-    #   python-dateutil
-ta-lib==0.4.19
-    # via -r requirements.in
-twisted==20.3.0
-    # via
-    #   -r requirements.in
-    #   python-binance
-txaio==20.12.1
-    # via autobahn
-tzlocal==2.1
-    # via dateparser
-ujson==4.0.1
-    # via python-binance
-urllib3==1.26.2
-    # via
-    #   python-binance
-    #   requests
-zope.interface==5.2.0
-    # via twisted
+aio-pika==6.7.1           # via -r requirements.in
+aiormq==3.3.1             # via aio-pika
+asyncpg==0.21.0           # via -r requirements.in
+attrs==20.3.0             # via automat, service-identity, twisted
+autobahn==20.12.3         # via python-binance
+automat==20.2.0           # via twisted
+certifi==2020.12.5        # via python-binance, requests
+cffi==1.14.4              # via cryptography
+chardet==4.0.0            # via requests
+constantly==15.1.0        # via twisted
+cryptography==3.3.1       # via autobahn, pyopenssl, python-binance, service-identity
+dateparser==1.0.0         # via python-binance
+hyperlink==21.0.0         # via autobahn, twisted
+idna==2.10                # via hyperlink, requests, yarl
+incremental==17.5.0       # via twisted
+multidict==5.1.0          # via yarl
+numpy==1.19.5             # via pandas, ta-lib
+pamqp==2.3.0              # via aiormq
+pandas==1.2.1             # via -r requirements.in
+pyasn1-modules==0.2.8     # via service-identity
+pyasn1==0.4.8             # via pyasn1-modules, service-identity
+pycparser==2.20           # via cffi
+pyhamcrest==2.0.2         # via twisted
+pyopenssl==20.0.1         # via python-binance
+python-binance==0.7.9     # via -r requirements.in
+python-dateutil==2.8.1    # via dateparser, pandas
+pytz==2020.5              # via dateparser, pandas, tzlocal
+regex==2020.11.13         # via dateparser
+requests==2.25.1          # via python-binance
+service-identity==18.1.0  # via python-binance
+simplejson==3.17.2        # via -r requirements.in
+six==1.15.0               # via automat, cryptography, pyopenssl, python-binance, python-dateutil
+ta-lib==0.4.19            # via -r requirements.in
+twisted==20.3.0           # via -r requirements.in, python-binance
+txaio==20.12.1            # via autobahn
+tzlocal==2.1              # via dateparser
+ujson==4.0.2              # via python-binance
+urllib3==1.26.3           # via python-binance, requests
+yarl==1.6.3               # via aio-pika, aiormq
+zope.interface==5.2.0     # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

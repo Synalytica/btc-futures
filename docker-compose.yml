@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+    db:
+        image: timescale/timescaledb:2.0.0-pg12
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: $POSTGRES_USER
+            POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+            POSTGRES_DB: $POSTGRES_DB
+        volumes:
+            - $PWD/data/postgres:/var/lib/postgresql/data
+            - $PWD/config/db:/docker-entrpoint-initdb.d/
+        ports:
+            - 5432:5432
+
+    rabbit:
+        image: rabbitmq:alpine
+        hostname: rabbit
+        environment:
+            RABBITMQ_DEFAULT_USER: $RABBIT_USER
+            RABBITMQ_DEFAULT_PASS: $RABBIT_PASSWORD
+        ports:
+             - 5672:5672
+
