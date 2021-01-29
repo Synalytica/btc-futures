@@ -25,7 +25,7 @@ from utils.enums import StreamType
 class Stream:
     """Engine to run the streaming functionality"""
 
-    def __init__(self, asset: Tuple[str, str], API_KEY: str, API_SECRET: str):
+    def __init__(self, loop: asyncio.AbstractEventLoop, asset: Tuple[str, str], API_KEY: str, API_SECRET: str):
         """Initialize the Binance API connection for a given asset
 
         :Params:
@@ -33,6 +33,8 @@ class Stream:
             - API_KEY: binance api key
             - API_SECRET: binance api secret
         """
+        self.loop = loop
+
         MAX_LEN = 100
         self.candles = deque([[]], maxlen=MAX_LEN)
 
@@ -120,10 +122,9 @@ class Stream:
         ]
 
         # setup rabbitmq exchange
-        self.loop = asyncio.get_event_loop()
         self.connection = await connect(self.RABBIT_URI, loop=self.loop)
         channel = await self.connection.channel()
-        self.exchange = await channel.declare_exchange("tickers", ExchangeType.TOPIC, passive=True)
+        self.exchange = await channel.declare_exchange("tickers", ExchangeType.TOPIC)
 
         try:
             if all(sockets):

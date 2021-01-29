@@ -15,12 +15,13 @@ from utils.encoder import EnhancedJSONDecoder
 class Warehouse:
     """Store and catalog incoming ticker information to database"""
 
-    def __init__(self, candle_delay: int = 3, ticker_delay: int = 10):
+    def __init__(self, loop: asyncio.AbstractEventLoop, candle_delay: int = 3, ticker_delay: int = 10):
         # fetch connection URIs from env
         self.DATABASE_URI = os.getenv("DATABASE_URI",
                                       'postgresql://postgres:postgres@localhost/test')
         self.RABBIT_URI = os.getenv(
             "RABBIT_URI", "amqp://guest:guest@localhost/")
+        self.loop = loop
 
         # set delays for writing of chunks
         self.candle_delay = candle_delay
@@ -40,7 +41,6 @@ class Warehouse:
     async def run(self):
         """Intialize and start the queue listeners and dumper"""
         self.pool = await asyncpg.create_pool(self.DATABASE_URI, timeout=60)
-        self.loop = asyncio.get_event_loop()
 
         # Creating a channel
         self.connection = await connect(self.RABBIT_URI, loop=self.loop)
@@ -48,22 +48,19 @@ class Warehouse:
         await channel.set_qos(prefetch_count=1)
 
         self.exchange = await channel.declare_exchange(
-            "tickers", ExchangeType.TOPIC
+            "tickers", ExchangeType.TOPIC, passive=True
         )
 
-        queues = []
         # set up relevant queues for topics
         for topic in self.topics:
-            queue = await channel.declare_queue(exclusive=True)
+            queue = await channel.declare_queue()
             await queue.bind(self.exchange, topic)
-            queues.append(queue.consume(self.on_message))
+            await queue.consume(self.on_message)
 
-        await asyncio.gather(*queues)
         self.loop.create_task(self.dump_to_db())
 
         # run the event loop as a daemon
-        if not self.loop.is_running():
-            self.loop.run_forever()
+        self.loop.run_forever()
 
     async def on_message(self, message: IncomingMessage):
         """Process the message as it is delivered"""

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from asyncio import get_event_loop
+import asyncio
 import os
 import multiprocessing as mp
 import sys
@@ -12,11 +12,13 @@ from crypto.warehouse import Warehouse
 
 def start_stream():
     """Initialize the streaming of data from Binance"""
+    policy = asyncio.get_event_loop_policy()
+    policy.set_event_loop(policy.new_event_loop())
     try:
-        loop = get_event_loop()
+        loop = asyncio.get_event_loop()
         API_KEY = os.getenv("BINANCE_API_KEY", "change-this-key")
         API_SECRET = os.getenv("BINANCE_API_SECRET", "change-this-secret")
-        stream = Stream(("btc", "usdt"), API_KEY, API_SECRET)
+        stream = Stream(loop, ("btc", "usdt"), API_KEY, API_SECRET)
         loop.create_task(stream.run())
         loop.run_forever()
     except BinanceAPIException as e:
@@ -25,11 +27,12 @@ def start_stream():
 
 def start_warehouse():
     """Initialize the dumping of data to db"""
+    policy = asyncio.get_event_loop_policy()
+    policy.set_event_loop(policy.new_event_loop())
     try:
-        loop = get_event_loop()
-        warehouse = Warehouse()
-        loop.create_task(warehouse.run())
-        loop.run_forever()
+        loop = asyncio.get_event_loop()
+        warehouse = Warehouse(loop)
+        loop.run_until_complete(warehouse.run())
     except Exception as e:
         sys.stderr.write(f"[error] Warehouse: {e}\n")
 
@@ -48,7 +51,7 @@ def main():
     ]
 
     # start all the processes
-    [(f"[{idx}/{len(processes)}] Process {process.name} starting ...", process.start())
+    [(print(f"[{idx + 1}/{len(processes)}] Process {process.name} starting ..."), process.start())
         for idx, process in enumerate(processes)]
 
     # wait for processess to all exit before quitting the main program

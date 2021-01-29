@@ -30,7 +30,7 @@ def create_streamer(loop: asyncio.AbstractEventLoop, RABBIT_URI: str):
             exchange = await channel.declare_exchange(
                 "tickers", ExchangeType.TOPIC, passive=True
             )
-            queue = await channel.declare_queue(exclusive=True)
+            queue = await channel.declare_queue()
             await queue.bind(exchange, topic)
 
             async def wrapper(message: IncomingMessage, *args, **kwargs):
