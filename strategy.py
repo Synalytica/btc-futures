@@ -77,10 +77,10 @@ def genSig(data: dict):
     df = df.append(data, ignore_index=True)
 
     # This potetially can be changed for performance
-    df['emaFast'] = ta.EMA(df.Close, timeperiod=alpha.eMAFast)
-    df['emaSlow'] = ta.EMA(df.Close, timeperiod=alpha.eMASlow)
-    df['adx'] = ta.ADX(df.High, df.Low,
-                       df.Close, timeperiod=alpha.aDXInterval)
+    df['emaFast'] = ta.EMA(df.c, timeperiod=alpha.eMAFast)
+    df['emaSlow'] = ta.EMA(df.c, timeperiod=alpha.eMASlow)
+    df['adx'] = ta.ADX(df.h, df.l,
+                       df.c, timeperiod=alpha.aDXInterval)
 
     if df.at[-1, 'emaFast'] > df.at[-1, 'emaSlow'] and df.at[-2, 'emaFast'] < df.at[-2, 'emaSlow'] and df.at[-1, 'adx'] < 40 and df.at[-1, 'adx'] > 30:
         alpha.signal = Signal.SHORT
