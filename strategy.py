@@ -56,22 +56,27 @@ def checkExit(data: dict):
         print("exited LONG at " + str(data.t) +
               " with mark price : " + str(data.m))
         if (alpha.sl >= data.m):
-            print("win")
-        elif (alpha.tp <= data.m):
             print("lose")
+        elif (alpha.tp <= data.m):
+            print("win")
+        return True
     elif (alpha.sl > alpha.orderPrice) and ((alpha.sl <= data.m) or (alpha.tp >= data.m)):
         # Do exit action
         print("exited SHORT at " + str(data.t) +
               " with mark price : " + str(data.m))
         if (alpha.sl <= data.m):
-            print("win")
-        elif (alpha.tp >= data.m):
             print("lose")
+        elif (alpha.tp >= data.m):
+            print("win")
+        return True
+    return False
 
 
 def genSig(data: dict):
     global df
     df = df.append(data, ignore_index=True)
+
+    # This potetially can be changed for performance
     df['emaFast'] = ta.EMA(df.Close, timeperiod=alpha.eMAFast)
     df['emaSlow'] = ta.EMA(df.Close, timeperiod=alpha.eMASlow)
     df['adx'] = ta.ADX(df.High, df.Low,
@@ -80,11 +85,11 @@ def genSig(data: dict):
     if df.at[-1, 'emaFast'] > df.at[-1, 'emaSlow'] and df.at[-2, 'emaFast'] < df.at[-2, 'emaSlow'] and df.at[-1, 'adx'] < 40 and df.at[-1, 'adx'] > 30:
         alpha.signal = Signal.SHORT
         alpha.sigGenerated = True
-
     elif df.at[-1, 'emaFast'] < df.at[-1, 'emaSlow'] and df.at[-2, 'emaFast'] > df.at[-2, 'emaSlow'] and df.at[-1, 'adx'] < 40 and df.at[-1, 'adx'] > 30:
         alpha.signal = Signal.LONG
         alpha.sigGenerated = True
 
+    # reset df to 500 candles for memory management
     if len(df.index) > 5000:
         df = df.iloc[500:]
 
