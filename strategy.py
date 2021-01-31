@@ -33,40 +33,40 @@ alpha.eMAFast, alpha.eMASlow, alpha.aDXInterval = 10, 25, 14
 
 
 def checkEntry(data: dict):
-    if (alpha.signal == Signal.LONG) and (data.m < data.b):
-        alpha.orderprice = data.m
+    if (alpha.signal == Signal.LONG) and (data['m'] < data['b']):
+        alpha.orderprice = data['m']
         alpha.sl = alpha.orderprice-100
         alpha.tp = alpha.orderprice+150
-        print("entered long at " + str(data.t) + " with mark price : " +
-              str(data.m) + " exit at sl = " + str(alpha.sl) + " or tp = " + str(alpha.tp))
+        print("entered long at " + str(data['t']) + " with mark price : " +
+              str(data['m']) + " exit at sl = " + str(alpha.sl) + " or tp = " + str(alpha.tp))
         return True
-    elif (alpha.signal == Signal.SHORT) and (data.m > data.a):
-        alpha.orderprice = data.m
+    elif (alpha.signal == Signal.SHORT) and (data['m'] > data['a']):
+        alpha.orderprice = data['m']
         alpha.sl = alpha.orderprice+100
         alpha.tp = alpha.orderprice-150
-        print("entered long at " + str(data.t) + " with mark price : " +
-              str(data.m) + " exit at sl = " + str(alpha.sl) + " or tp = " + str(alpha.tp))
+        print("entered long at " + str(data['t']) + " with mark price : " +
+              str(data['m']) + " exit at sl = " + str(alpha.sl) + " or tp = " + str(alpha.tp))
         return True
     return False
 
 
 def checkExit(data: dict):
-    if (alpha.sl < alpha.orderPrice) and ((alpha.sl >= data.m) or (alpha.tp <= data.m)):
+    if (alpha.sl < alpha.orderPrice) and ((alpha.sl >= data['m']) or (alpha.tp <= data['m'])):
         # Do exit action
-        print("exited LONG at " + str(data.t) +
-              " with mark price : " + str(data.m))
-        if (alpha.sl >= data.m):
+        print("exited LONG at " + str(data['t']) +
+              " with mark price : " + str(data['m']))
+        if (alpha.sl >= data['m']):
             print("lose")
-        elif (alpha.tp <= data.m):
+        elif (alpha.tp <= data['m']):
             print("win")
         return True
-    elif (alpha.sl > alpha.orderPrice) and ((alpha.sl <= data.m) or (alpha.tp >= data.m)):
+    elif (alpha.sl > alpha.orderPrice) and ((alpha.sl <= data['m']) or (alpha.tp >= data['m'])):
         # Do exit action
-        print("exited SHORT at " + str(data.t) +
-              " with mark price : " + str(data.m))
-        if (alpha.sl <= data.m):
+        print("exited SHORT at " + str(data['t']) +
+              " with mark price : " + str(data['m']))
+        if (alpha.sl <= data['m']):
             print("lose")
-        elif (alpha.tp >= data.m):
+        elif (alpha.tp >= data['m']):
             print("win")
         return True
     return False
