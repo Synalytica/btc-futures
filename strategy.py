@@ -31,7 +31,7 @@ RABBIT_URI = os.getenv("RABBIT_URI", "amqp://guest:guest@localhost/")
 on_stream = create_streamer(loop, RABBIT_URI)
 alpha = Strategy("alpha", loop)
 alpha.overlap, alpha.sigGenerated, alpha.signal = False, False, Signal.NULL
-alpha.eMAFast, alpha.eMASlow, alpha.aDXInterval, alpha.orderPrice, alpha.sl, alpha.tp, secLatestEMAFast, secLatestEMASlow = 3, 6, 7, 0, 0, 0, 0, 0
+alpha.eMAFast, alpha.eMASlow, alpha.aDXInterval, alpha.orderPrice, alpha.sl, alpha.tp, secLatestEMAFast, secLatestEMASlow = 10, 25, 14, 0, 0, 0, 0, 0
 
 # Checks entry after signal is generated
 
