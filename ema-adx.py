@@ -116,8 +116,11 @@ def genSig(data: dict):
                 latestADX < 40 and latestADX > 30:
         strategy.signal = Signal.LONG
         strategy.sigGenerated = True
+    else :
+        strategy.signal = Signal.NULL
+        strategy.sigGenerated = False
     secLatestEMAFast, secLatestEMASlow = latestEMAFast, latestEMASlow
-
+    
 
 @on_stream(topic="crypto.futures.tick.btcusdt")
 async def on_tick(data: dict):
