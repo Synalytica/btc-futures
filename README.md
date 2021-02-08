@@ -74,6 +74,20 @@ optional arguments:
 
 - Example: `./analysis.py -i data/orders.csv`
 
+
+### ```utils/summary.py```
+
+- First, copy the trade output from the strategy into a file, say `trades.txt`
+- Next run the script with a desired balance and risk tolerance per trade.
+
+```bash
+./summary.py -i ../data/trades.txt -b 500 -r 0.1  # balance $500, risk 10%
+```
+
+- _Optionally_, pass the generated `orders.csv` into the `analysis.py` script for
+  aggregated stats.
+
+
 ## Development
 
 ```bash

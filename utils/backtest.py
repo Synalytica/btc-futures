@@ -118,7 +118,7 @@ def main():
                     'exit_high': df.at[i, 'High'],
                     'exit_low': df.at[i, 'Low'],
                     'entry_price': buyPrice,
-                    'profit': status.value
+                    'status': status.value
                 })
                 signal, status, inPosition, exited = Signal.NULL, None, False, False
                 sl, tp, buyPrice = 0, 0, 0

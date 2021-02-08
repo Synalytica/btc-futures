@@ -33,9 +33,9 @@ def generate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     ])
     table.append([
         "WR",
-        df.profit.mean(),
-        df.profit.loc[longs].mean(),
-        df.profit.loc[shorts].mean(),
+        df.status.mean(),
+        df.status.loc[longs].mean(),
+        df.status.loc[shorts].mean(),
     ])
 
     # trade duration
@@ -48,9 +48,12 @@ def generate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     ])
 
     # estimated profits + slippage
-    avg_exit = (df.exit_high + df.exit_low) / 2
-    profits = avg_exit - df.entry_price
-    profits.loc[shorts] *= -1  # opposite movement for shorts
+    if 'profit' in df.columns:
+        profits = df.profit
+    else:
+        avg_exit = (df.exit_high + df.exit_low) / 2
+        profits = avg_exit - df.entry_price
+        profits.loc[shorts] *= -1  # opposite movement for shorts
     table.append([
         "Profit",
         profits.sum(),
