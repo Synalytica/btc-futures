@@ -130,6 +130,7 @@ dmypy.json
 
 # data
 data/
+trades.txt
 
 # env loading
 .envrc

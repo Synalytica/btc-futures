@@ -15,10 +15,10 @@ pip3 install -r requirements.txt
 - Populate the environment with necessary variables (as outlined in
   `env.example`)
 
-- Run the docker container
+- Run the docker containers
 
 ```bash
-docker run --rm -d -e POSTGRES_USER=$POSTGRES_USER -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD -e POSTGRES_DB=$POSTGRES_DB -v $PWD/data/postgres:/var/lib/postgresql/data -v $PWD/config/db/:/docker-entrypoint-initdb.d/ --name timescaledb -p 5432:5432 timescale/timescaledb:2.0.0-pg12
+docker-compose up
 ```
 
 - Test your database
