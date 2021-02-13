@@ -39,7 +39,40 @@ docker-compose up
 ```bash
 ./run.py
 ```
- 
+
+### `./utils/gen_chart_data.py`
+
+```bash
+usage: gen_chart_data.py [-h] [-i INPUT] [-c CANDLES] [-o OUTPUT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        Order data
+  -c CANDLES, --candles CANDLES
+                        Candle data dump
+  -o OUTPUT, --output OUTPUT
+                        Output charting json
+```
+
+- Example: `./gen_chart_data.py -i ../data/orders.csv -c ../data/candles.csv -o ../data/data.json`
+- This generated `data.json` can be placed in
+  [`$PROJECT_DIR`](https://github.com/Synalytica/visualization-engine)`/public/`
+  to visualize using trading view.
+
+
+### ```utils/summary.py```
+
+- First, copy the trade output from the strategy into a file, say `trades.txt`
+- Next run the script with a desired balance and risk tolerance per trade.
+
+```bash
+./summary.py -i ../data/trades.txt -b 500 -r 0.1  # balance $500, risk 10%
+```
+
+- _Optionally_, pass the generated `orders.csv` into the `analysis.py` script for
+  aggregated stats.
+
 ### `./utils/backtest.py`
 
 ```bash
@@ -69,23 +102,10 @@ usage: analysis.py [-h] [-i INPUT]
 optional arguments:
   -h, --help            show this help message and exit
   -i INPUT, --input INPUT
-                        Order output 
+                        Order output
 ```
 
 - Example: `./analysis.py -i data/orders.csv`
-
-
-### ```utils/summary.py```
-
-- First, copy the trade output from the strategy into a file, say `trades.txt`
-- Next run the script with a desired balance and risk tolerance per trade.
-
-```bash
-./summary.py -i ../data/trades.txt -b 500 -r 0.1  # balance $500, risk 10%
-```
-
-- _Optionally_, pass the generated `orders.csv` into the `analysis.py` script for
-  aggregated stats.
 
 
 ## Development
@@ -94,5 +114,6 @@ optional arguments:
 pip3 install pip-tools
 pip-compile requirements.in > requirements.txt
 ```
+
 
 
