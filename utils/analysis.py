@@ -85,7 +85,9 @@ def plot_trades(orders: pd.DataFrame) -> None:
 def main():
     args = collect_args()
     df = pd.read_csv(args.input, parse_dates=[0, 1])
+    print(f"trading from {df.entry_time.min()} to {df.exit_time.max()} ({df.exit_time.max() - df.entry_time.min()})")
     metrics = generate_metrics(df)
+    pd.set_option('display.max_columns', None)
     print(metrics.T.head(100))
     # TODO implement plotting of trades
     # plot_trades(df)

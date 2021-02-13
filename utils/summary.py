@@ -35,7 +35,7 @@ def dump_trades(trades: dict, output_path: str) -> None:
     cols = ["entry_time", "exit_time", "trade_type", "entry_price",
             "sl", "tp", "exit_price", "status", "profit"]
     print(trades.head(100))
-    trades[cols].to_csv(output_path, index=False)
+    trades[cols].set_index('entry_time').sort_index().to_csv(output_path)
 
 
 def calc_profits(trades: pd.DataFrame, balance: int, risk: float) -> pd.DataFrame:
