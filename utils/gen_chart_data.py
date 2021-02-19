@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 """
-    :author: pk13055
-    :brief: generate charting json data from input
+:author: pk13055
+:brief: generate charting json data from input
 
 """
 import argparse
@@ -15,11 +15,24 @@ from operator import add
 from analysis import generate_metrics
 
 from aiohttp import ClientSession
+import numpy as np
 import pandas as pd
 
 N_LIM = 1500  # NOTE: candle fetch limit per call
 BASE_URL = f"https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1m&limit={N_LIM}"
 
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, pd.Timedelta):
+            return obj.isoformat()
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NpEncoder, self).default(obj)
 
 def collect_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -59,13 +72,13 @@ async def gen_candles(start_time: int, end_time: int) -> list:
 
 def parse_orders(filename) -> dict:
     df = pd.read_csv(filename, parse_dates=[0, 1])
+    metrics = generate_metrics(df)
     df.entry_time = df.entry_time.round("T").map(lambda x: int(x.timestamp()))
     df.exit_time = df.exit_time.round("T").map(lambda x: int(x.timestamp()))
-    metrics = generate_metrics(df)
     orders = []
     for _, trade in df.iterrows():
         entry = {
-            "time": trade.entry_time,
+            "time": int(trade.entry_time),
             "position": "belowBar" if trade.trade_type == "LONG" else "aboveBar",
             "color": "green" if trade.status else "red",
             "shape": "arrowUp" if trade.trade_type == "LONG" else "arrowDown",
@@ -77,7 +90,7 @@ def parse_orders(filename) -> dict:
         exit = entry.copy()
         exit.update(
             {
-                "time": trade.exit_time,
+                "time": int(trade.exit_time),
                 "position": "aboveBar" if trade.trade_type == "LONG" else "belowBar",
                 "shape": "arrowUp" if trade.trade_type == "SHORT" else "arrowDown",
                 "id": f"id{_}-exit",
@@ -92,18 +105,17 @@ def parse_orders(filename) -> dict:
 async def main():
     args = collect_args()
 
-    orders, metrics_df, start_time, end_time = parse_orders(args.input)
+    orders, metrics, start_time, end_time = parse_orders(args.input)
     candles = await gen_candles(start_time, end_time)
 
     ohlc = pd.DataFrame.from_dict(list(candles)).set_index("time").sort_index()
     ohlc.to_csv(args.candles)
 
-    metrics = metrics_df.to_json()
-
-    json.dump(
-        {"candles": ohlc.reset_index().to_dict(orient="records"), "orders": orders, "metrics": metrics},
-        open(args.output, "w+"),
-    )
+    json.dump({
+        "candles": ohlc.reset_index().to_dict(orient="records"),
+        "orders": orders,
+        "metrics": metrics.reset_index().to_dict(orient="records"),
+    }, open(args.output, "w+"), cls=NpEncoder)
 
 
 if __name__ == "__main__":
