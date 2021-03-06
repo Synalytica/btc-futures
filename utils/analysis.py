@@ -62,13 +62,13 @@ def generate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     ])
     table.append([
         "Drawdown",
-        profits.min(),
+        (profits.min()-profits.max())/profits.max(),
         profits.loc[longs].min(),
         profits.loc[shorts].min(),
     ])
     table.append([
         "Max Profit",
-        profits.max(),
+        (profits.max()-profits.min())/profits.max(),
         profits.loc[longs].max(),
         profits.loc[shorts].max(),
     ])
