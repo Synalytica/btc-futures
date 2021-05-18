@@ -20,7 +20,7 @@ async def main():
             # insert test row
             row = [datetime.datetime.now()] + [100 * random.random() for _ in range(5)]
             await conn.execute('''
-                INSERT into ohlc(timestamp, open, high, low, close, volume) VALUES($1, $2, $3, $4, $5, $6)
+                INSERT into ohlc(timestamp, open, high, low, close, vol) VALUES($1, $2, $3, $4, $5, $6)
             ''', *row)
             async with conn.transaction():
                 async for row in conn.cursor('''
