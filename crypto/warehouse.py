@@ -48,7 +48,7 @@ class Warehouse:
         await channel.set_qos(prefetch_count=1)
 
         self.exchange = await channel.declare_exchange(
-            "tickers", ExchangeType.TOPIC, passive=True
+            "tickers", ExchangeType.TOPIC
         )
 
         # set up relevant queues for topics
@@ -58,9 +58,6 @@ class Warehouse:
             await queue.consume(self.on_message)
 
         self.loop.create_task(self.dump_to_db())
-
-        # run the event loop as a daemon
-        self.loop.run_forever()
 
     async def on_message(self, message: IncomingMessage):
         """Process the message as it is delivered"""
@@ -75,6 +72,7 @@ class Warehouse:
     async def dump_to_db(self):
         """Save candles to db"""
         while True:
+            await asyncio.sleep(0)
             if not self.ticks.empty():
                 data = await self.ticks.get()
                 row = [data['t'], data['m'], data['a'], data['b'], data['v']]

@@ -14,11 +14,12 @@ services:
             - 5432:5432
 
     rabbit:
-        image: rabbitmq:alpine
+        image: rabbitmq:management-alpine
         hostname: rabbit
         environment:
             RABBITMQ_DEFAULT_USER: $RABBIT_USER
             RABBITMQ_DEFAULT_PASS: $RABBIT_PASSWORD
         ports:
              - 5672:5672
+             - 8000:15672
 

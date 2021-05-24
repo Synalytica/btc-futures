@@ -32,7 +32,8 @@ def start_warehouse():
     try:
         loop = asyncio.get_event_loop()
         warehouse = Warehouse(loop)
-        loop.run_until_complete(warehouse.run())
+        loop.create_task(warehouse.run())
+        loop.run_forever()
     except Exception as e:
         sys.stderr.write(f"[error] Warehouse: {e}\n")
 
