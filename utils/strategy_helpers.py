@@ -1,68 +1,49 @@
 """
-    :author: pk13055
+    :author: pk13055,shreygupta2809
     :brief: convenience functions for strategy help
 """
-import asyncio
-from copy import copy
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 import json
 import os
-from datetime import datetime, timedelta
-from enum import Enum, IntEnum
 
 from aio_pika import connect, IncomingMessage, ExchangeType, Message, DeliveryMode
-
 import asyncio
 import asyncpg
 
 from .encoder import EnhancedJSONDecoder, EnhancedJSONEncoder
+from .enums import Stage
 
 
-class Stage(Enum):
-    """Stage of the Strategy"""
-
-    BACKTEST = 0
-    OPTIMIZE = 1
-    PAPER = 2
-    LIVE = 3
-    ARCHIVE = 4
-    LIQUIDATE = 5  # CLOSE
-
-
-def stage_to_enum(argument):
-    switcher = {
-        "B": Stage.BACKTEST,
-        "O": Stage.OPTIMIZE,
-        "P": Stage.PAPER,
-        "L": Stage.LIVE,
-        "A": Stage.ARCHIVE,
-        "C": Stage.LIQUIDATE,
-    }
-
-    return switcher.get(argument, Stage.BACKTEST)
-
-
-@dataclass
 class Strategy:
     """Base class for strategy creation"""
 
-    name: str
-    stage: str
-    loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-    inPosition: bool = False
-    DATABASE_URI: str = os.getenv(
-        "DATABASE_URI", "postgresql://postgres@localhost/test"
-    )
-    RABBIT_URI: str = os.getenv("RABBIT_URI", "amqp://guest:guest@localhost/")
-    currency: str = "btcusdt"
-    asset: str = "crypto"
-    asset_type: str = "future"
-    sigGenerated: bool = False
-    start_date: datetime = ""
-    end_date: datetime = ""
+    def __init__(
+        self,
+        name: str,
+        stage: Stage,
+        loop: asyncio.AbstractEventLoop = asyncio.get_event_loop(),
+        currency: str = "btcusdt",
+        asset: str = "crypto",
+        asset_type: str = "futures",
+        start_date: datetime = "",
+        end_date: datetime = "",
+    ):
+        self.name = name
+        self.loop = loop
+        self.stage = Stage[stage]
+        self.currency = currency
+        self.asset = asset
+        self.asset_type = asset_type
+        self.inPosition: bool = False
+        self.DATABASE_URI: str = os.getenv(
+            "DATABASE_URI", "postgresql://postgres@localhost/test"
+        )
+        self.RABBIT_URI: str = os.getenv("RABBIT_URI", "amqp://guest:guest@localhost/")
+        self.sigGenerated: bool = False
 
-    def __post_init__(self):
-        self.stage = stage_to_enum(self.stage)
+        self.start_date = start_date
+        self.end_date = end_date
         if self.stage == Stage.BACKTEST:
             if self.start_date == "" and self.end_date != "":
                 self.end_date = datetime.strptime(self.end_date, "%Y/%m/%d")
@@ -87,7 +68,7 @@ class Strategy:
             self.start_date = self.start_date.date()
             self.end_date = self.end_date.date()
 
-    async def run(self):
+    async def run(self) -> None:
         await self.create_exchanges()
         on_stream = create_streamer(self.loop, self.RABBIT_URI, self.exchange_name)
 
@@ -118,7 +99,7 @@ class Strategy:
             self.loop.create_task(on_tick)
         self.loop.create_task(on_candle)
 
-    async def create_exchanges(self):
+    async def create_exchanges(self) -> None:
         self.connection = await connect(self.RABBIT_URI, loop=self.loop)
         channel = await self.connection.channel()
         if self.stage == Stage.LIVE:
@@ -134,55 +115,55 @@ class Strategy:
             self.exchange_name, ExchangeType.TOPIC
         )
 
-    def checkEntry(self, data: dict):
+        self.pool = await asyncpg.create_pool(self.DATABASE_URI, timeout=60)
+
+    def checkEntry(self, data: dict) -> None:
         """Checks entry after signal is generated"""
-        pass
+        raise NotImplementedError
 
-    def checkExit(self, data: dict):
+    def checkExit(self, data: dict) -> None:
         """Checks exit"""
-        pass
+        raise NotImplementedError
 
-    def genSig(self, data: dict):
+    def genSig(self, data: dict) -> None:
         """Generates trade signals"""
-        pass
+        raise NotImplementedError
 
-    def backtest(self, data: dict):
+    def backtest(self, data: dict) -> None:
         """Backtests the strategy on past ohlc data"""
-        pass
+        raise NotImplementedError
 
-    async def query_ohlc_data(self):
-        async with asyncpg.create_pool(self.DATABASE_URI, command_timeout=60) as pool:
-            async with pool.acquire() as conn:
-                async with conn.transaction():
-                    async for row in conn.cursor(
-                        f"""
+    async def query_ohlc_data(self) -> None:
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                async for row in conn.cursor(
+                    f"""
                                                 SELECT * from ohlc
                                                 WHERE timestamp >= '{self.start_date}' AND timestamp < '{self.end_date}'
-                                                ORDER BY timestamp;
+                                                ORDER BY timestamp
+                                                LIMIT 2;
                                                 """
-                    ):
+                ):
 
-                        datapoint = {
-                            "t": row["timestamp"],
-                            "o": row["open"],
-                            "h": row["high"],
-                            "l": row["low"],
-                            "c": row["close"],
-                            "v": row["vol"],
-                        }
+                    datapoint = {
+                        "t": row["timestamp"],
+                        "o": row["open"],
+                        "h": row["high"],
+                        "l": row["low"],
+                        "c": row["close"],
+                        "v": row["vol"],
+                    }
 
-                        asyncio.ensure_future(
-                            self.exchange.publish(
-                                Message(
-                                    json.dumps(
-                                        datapoint, cls=EnhancedJSONEncoder
-                                    ).encode(),
-                                    delivery_mode=DeliveryMode.PERSISTENT,
-                                ),
-                                routing_key=f"{self.asset}.{self.asset_type}.ohlc.{self.currency}.db",
+                    asyncio.ensure_future(
+                        self.exchange.publish(
+                            Message(
+                                json.dumps(datapoint, cls=EnhancedJSONEncoder).encode(),
+                                delivery_mode=DeliveryMode.PERSISTENT,
                             ),
-                            loop=self.loop,
-                        )
+                            routing_key=f"{self.asset}.{self.asset_type}.ohlc.{self.currency}.db",
+                        ),
+                        loop=self.loop,
+                    )
 
 
 def create_streamer(
