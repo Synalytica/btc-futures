@@ -69,37 +69,15 @@ class Strategy:
             self.end_date = self.end_date.date()
 
     async def run(self) -> None:
+        """The main strategy run function which executes the strategy"""
         await self.create_exchanges()
-        on_stream = create_streamer(self.loop, self.RABBIT_URI, self.exchange_name)
-
-        @on_stream(topic=self.tick_topic)
-        async def on_tick(data: dict):
-            """Process data every tick"""
-            print("TICK: ", data)
-            if self.sigGenerated and not self.inPosition:
-                if self.checkEntry(data):
-                    self.inPosition = True
-                    self.sigGenerated = False
-            elif self.inPosition:
-                if self.checkExit(data):
-                    self.inPosition = False
-
-        @on_stream(topic=self.ohlc_topic)
-        async def on_candle(data: dict):
-            """Process data every candle"""
-            print("CANDLE: ", data)
-            if self.stage == Stage.LIVE:
-                self.genSig(data)
-            elif self.stage == Stage.BACKTEST:
-                self.backtest(data)
+        await self.bind_queues()
 
         if self.stage == Stage.BACKTEST:
             self.loop.create_task(self.query_ohlc_data())
-        elif self.stage == Stage.LIVE:
-            self.loop.create_task(on_tick)
-        self.loop.create_task(on_candle)
 
     async def create_exchanges(self) -> None:
+        """Creates the Exchanges, Pool and Topics necessary for execution"""
         self.connection = await connect(self.RABBIT_URI, loop=self.loop)
         channel = await self.connection.channel()
         if self.stage == Stage.LIVE:
@@ -116,6 +94,46 @@ class Strategy:
         )
 
         self.pool = await asyncpg.create_pool(self.DATABASE_URI, timeout=60)
+
+    async def bind_queues(self) -> None:
+        """Binds the Queues to the Exchange for Necessary Topics"""
+        channel = await self.connection.channel()
+        await channel.set_qos(prefetch_count=1)
+
+        self.topics = [self.ohlc_topic]
+        if self.stage != Stage.BACKTEST:
+            self.topics.append(self.tick_topic)
+
+        for topic in self.topics:
+            queue = await channel.declare_queue()
+            await queue.bind(self.exchange, topic)
+            await queue.consume(self.on_message)
+
+    async def on_message(self, message: IncomingMessage, *args, **kwargs) -> None:
+        """Callback function which routes message to necessary function"""
+        async with message.process():
+            data = json.loads(message.body, cls=EnhancedJSONDecoder)
+            if "tick" in message.routing_key:
+                await self.on_tick(data)
+            elif "ohlc" in message.routing_key:
+                await self.on_candle(data)
+
+    async def on_tick(self, data: dict) -> None:
+        """Process data every tick"""
+        if self.sigGenerated and not self.inPosition:
+            if self.checkEntry(data):
+                self.inPosition = True
+                self.sigGenerated = False
+        elif self.inPosition:
+            if self.checkExit(data):
+                self.inPosition = False
+
+    async def on_candle(self, data: dict) -> None:
+        """Process data every candle"""
+        if self.stage == Stage.LIVE:
+            self.genSig(data)
+        elif self.stage == Stage.BACKTEST:
+            self.backtest(data)
 
     def checkEntry(self, data: dict) -> None:
         """Checks entry after signal is generated"""
@@ -134,14 +152,14 @@ class Strategy:
         raise NotImplementedError
 
     async def query_ohlc_data(self) -> None:
+        """Get the Past ohlc data from the database"""
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 async for row in conn.cursor(
                     f"""
                                                 SELECT * from ohlc
                                                 WHERE timestamp >= '{self.start_date}' AND timestamp < '{self.end_date}'
-                                                ORDER BY timestamp
-                                                LIMIT 2;
+                                                ORDER BY timestamp;
                                                 """
                 ):
 
@@ -164,29 +182,3 @@ class Strategy:
                         ),
                         loop=self.loop,
                     )
-
-
-def create_streamer(
-    loop: asyncio.AbstractEventLoop, RABBIT_URI: str, exchange_name: str
-):
-    """Create a streaming object decorator for tick and candle processing"""
-
-    def on_stream(topic: str):
-        async def decorator(function):
-            connection = await connect(RABBIT_URI, loop=loop)
-            channel = await connection.channel()
-            await channel.set_qos(prefetch_count=1)
-            exchange = await channel.declare_exchange(exchange_name, ExchangeType.TOPIC)
-            queue = await channel.declare_queue()
-            await queue.bind(exchange, topic)
-
-            async def wrapper(message: IncomingMessage, *args, **kwargs):
-                async with message.process():
-                    data = json.loads(message.body, cls=EnhancedJSONDecoder)
-                    await function(data, **kwargs)
-
-            await queue.consume(wrapper)
-
-        return decorator
-
-    return on_stream

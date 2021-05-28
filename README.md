@@ -107,6 +107,20 @@ optional arguments:
 
 - Example: `./analysis.py -i data/orders.csv`
 
+### `ema-adx.py`
+
+```bash
+usage: ema-adx.py [-h] [--stage STAGE] [--start START] [--end END]
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --stage STAGE        Execution Stage ["backtest", "optimize", "live", "paper", "archive", "liquidate"]
+  --start START        Start date for Backtest [YYYY/MM/DD]
+  --end END            End date for Backtest [YYYY/MM/DD]
+```
+
+- Example: `./ema-adx.py --stage backtest --end 2021/05/27 --start 2021/04/15`
+
 
 ## Development
 
