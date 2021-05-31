@@ -67,7 +67,10 @@ class Warehouse:
             if 'tick' in message.routing_key:
                 self.ticks.put_nowait(data)
             elif 'ohlc' in message.routing_key:
-                self.ohlc.put_nowait(data)
+                if (isinstance(data, list)):
+                    [self.ohlc.put_nowait(datapoint) for datapoint in data]
+                else:
+                    self.ohlc.put_nowait(data)
 
     async def dump_to_db(self):
         """Save candles to db"""
@@ -87,8 +90,8 @@ class Warehouse:
                     c := data['c'],
                     v := data['v']
                 ]
-                print(
-                    f"{timestamp.hour}:{timestamp.minute}\t::\tO:{o: .4f} H:{h: .4f} L:{l: .4f} C:{c: .4f} V:{v: .5f}")
+                # print(
+                #     f"{timestamp.hour}:{timestamp.minute}\t::\tO:{o: .4f} H:{h: .4f} L:{l: .4f} C:{c: .4f} V:{v: .5f}")
                 self._candles.append(row)
 
             if len(self._candles) >= self.candle_delay:

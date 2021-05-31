@@ -2,14 +2,12 @@
     :author: pk13055,shreygupta2809
     :brief: convenience functions for strategy help
 """
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 import json
 import os
 
 from aio_pika import connect, IncomingMessage, ExchangeType, Message, DeliveryMode
 import asyncio
-import asyncpg
 
 from .encoder import EnhancedJSONDecoder, EnhancedJSONEncoder
 from .enums import Stage
@@ -61,9 +59,7 @@ class Strategy:
 
             else:
                 self.start_date = datetime.strptime(self.start_date, "%Y/%m/%d")
-                self.end_date = datetime.strptime(
-                    self.end_date, "%Y/%m/%d"
-                ) + timedelta(1)
+                self.end_date = datetime.strptime(self.end_date, "%Y/%m/%d")
 
             self.start_date = self.start_date.date()
             self.end_date = self.end_date.date()
@@ -74,7 +70,18 @@ class Strategy:
         await self.bind_queues()
 
         if self.stage == Stage.BACKTEST:
-            self.loop.create_task(self.query_ohlc_data())
+            asyncio.ensure_future(
+                self.exchange.publish(
+                    Message(
+                        json.dumps(
+                            [self.start_date, self.end_date], cls=EnhancedJSONEncoder
+                        ).encode(),
+                        delivery_mode=DeliveryMode.PERSISTENT,
+                    ),
+                    routing_key=f"{self.asset}.{self.asset_type}.ohlc.{self.currency}",
+                ),
+                loop=self.loop,
+            )
 
     async def create_exchanges(self) -> None:
         """Creates the Exchanges, Pool and Topics necessary for execution"""
@@ -92,8 +99,6 @@ class Strategy:
         self.exchange = await channel.declare_exchange(
             self.exchange_name, ExchangeType.TOPIC
         )
-
-        self.pool = await asyncpg.create_pool(self.DATABASE_URI, timeout=60)
 
     async def bind_queues(self) -> None:
         """Binds the Queues to the Exchange for Necessary Topics"""
@@ -133,7 +138,8 @@ class Strategy:
         if self.stage == Stage.LIVE:
             self.genSig(data)
         elif self.stage == Stage.BACKTEST:
-            self.backtest(data)
+            sorted_data = sorted(data, key=lambda k: k["t"])
+            self.backtest(sorted_data)
 
     def checkEntry(self, data: dict) -> None:
         """Checks entry after signal is generated"""
@@ -150,35 +156,3 @@ class Strategy:
     def backtest(self, data: dict) -> None:
         """Backtests the strategy on past ohlc data"""
         raise NotImplementedError
-
-    async def query_ohlc_data(self) -> None:
-        """Get the Past ohlc data from the database"""
-        async with self.pool.acquire() as conn:
-            async with conn.transaction():
-                async for row in conn.cursor(
-                    f"""
-                                                SELECT * from ohlc
-                                                WHERE timestamp >= '{self.start_date}' AND timestamp < '{self.end_date}'
-                                                ORDER BY timestamp;
-                                                """
-                ):
-
-                    datapoint = {
-                        "t": row["timestamp"],
-                        "o": row["open"],
-                        "h": row["high"],
-                        "l": row["low"],
-                        "c": row["close"],
-                        "v": row["vol"],
-                    }
-
-                    asyncio.ensure_future(
-                        self.exchange.publish(
-                            Message(
-                                json.dumps(datapoint, cls=EnhancedJSONEncoder).encode(),
-                                delivery_mode=DeliveryMode.PERSISTENT,
-                            ),
-                            routing_key=f"{self.asset}.{self.asset_type}.ohlc.{self.currency}.db",
-                        ),
-                        loop=self.loop,
-                    )
