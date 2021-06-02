@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 """
-    :author: pk13055,mystertech,shreygupta2809
+    :author: pk13055, mystertech, shreygupta2809
     :brief: basic strategy to outline connection to system
 """
 import argparse

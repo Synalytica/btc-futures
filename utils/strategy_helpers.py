@@ -1,5 +1,5 @@
 """
-    :author: pk13055,shreygupta2809
+    :author: pk13055, shreygupta2809
     :brief: convenience functions for strategy help
 """
 from datetime import datetime, timedelta

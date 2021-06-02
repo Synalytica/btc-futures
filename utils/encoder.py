@@ -3,6 +3,8 @@ import decimal
 import json
 import sys
 
+import numpy as np
+import pandas as pd
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -44,3 +46,19 @@ class EnhancedJSONDecoder(json.JSONDecoder):
             o = getattr(o, e)
         args, kwargs = d.get('args', ()), d.get('kwargs', {})
         return o(*args, **kwargs)
+
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, pd.Timedelta):
+            return obj.isoformat()
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NpEncoder, self).default(obj)

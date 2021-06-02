@@ -77,6 +77,9 @@ class Database:
         self, timestamps: list, url: str, asset_type: str, currency: str
     ) -> List[Dict]:
         """Get timestamp for query of the remaining data for backtest"""
+        if not all(timestamps):
+            return []
+
         _timestamps = []
         async with self.pool.acquire() as conn:
             async with conn.transaction():
@@ -104,7 +107,7 @@ class Database:
 
         new_candles = []
 
-        if (timestamps[-1] < _timestamps[0]) or (timestamps[0] > _timestamps[-1]):
+        if timestamps[-1] < _timestamps[0] or timestamps[0] > _timestamps[-1]:
             new_candles = await self.gen_candles(
                 timestamps[0], timestamps[-1], url, asset_type, currency
             )
@@ -198,25 +201,26 @@ class Database:
     ) -> None:
         """Get the past ohlc data from the DB and API"""
         _candles = []
-        async with self.pool.acquire() as conn:
-            async with conn.transaction():
-                async for row in conn.cursor(
-                    f"""
-                                                SELECT * from ohlc
-                                                WHERE timestamp >= '{data[0]}' AND timestamp < '{data[-1]}'
-                                                ORDER BY timestamp;
-                                                """
-                ):
+        if all(data):
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    async for row in conn.cursor(
+                        f"""
+                                                    SELECT * from ohlc
+                                                    WHERE timestamp >= '{data[0]}' AND timestamp < '{data[-1]}'
+                                                    ORDER BY timestamp;
+                                                    """
+                    ):
 
-                    datapoint = {
-                        "t": row["timestamp"],
-                        "o": row["open"],
-                        "h": row["high"],
-                        "l": row["low"],
-                        "c": row["close"],
-                        "v": row["vol"],
-                    }
-                    _candles.append(datapoint)
+                        datapoint = {
+                            "t": row["timestamp"],
+                            "o": row["open"],
+                            "h": row["high"],
+                            "l": row["low"],
+                            "c": row["close"],
+                            "v": row["vol"],
+                        }
+                        _candles.append(datapoint)
 
         new_old_candles = await self.api_time_query(data, url, asset_type, currency)
         new_old_candles.extend(_candles)
