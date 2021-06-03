@@ -1,4 +1,5 @@
 # BTC Futures Strategy
+
 ![lint-status](https://github.com/Synalytica/btc-futures/workflows/Python%20application/badge.svg)
 
 ## Installation & Setup
@@ -6,6 +7,7 @@
 ### Dependencies
 
 - Install the script dependencies
+
 ```bash
 pip3 install -r requirements.txt
 ```
@@ -43,7 +45,7 @@ docker-compose up
 ### `./utils/gen_chart_data.py`
 
 ```bash
-usage: gen_chart_data.py [-h] [-i INPUT] [-c CANDLES] [-o OUTPUT]
+usage: gen_chart_data.py [-h] [-i INPUT] [-c CANDLES] [-o OUTPUT] [--asset_class ASSET CLASS] [-t TYPE] [-a ASSET] [-f FREQUENCY] 
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -53,15 +55,22 @@ optional arguments:
                         Candle data dump
   -o OUTPUT, --output OUTPUT
                         Output charting json
+  --asset_class ASSET_CLASS
+                        Asset Class ["crypto", "stock", "forex", "commodities"]
+  -t TYPE, --type TYPE
+                        Type of Asset ["futures", "spot", "margin"]
+  -a ASSET, --asset ASSET
+                        Asset
+  -f FREQUENCY, --frequency FREQUENCY
+                        Candle frequency $num["m", "h", "d"]
 ```
 
-- Example: `./gen_chart_data.py -i ../data/orders.csv -c ../data/candles.csv -o ../data/data.json`
+- Example: `./gen_chart_data.py -i ../data/orders.csv -c ../data/candles.csv -o ../data/data.json --asset_class crypto -t futures -a btcusdt -f 1m `
 - This generated `data.json` can be placed in
   [`$PROJECT_DIR`](https://github.com/Synalytica/visualization-engine)`/public/`
   to visualize using trading view.
 
-
-### ```utils/summary.py```
+### `utils/summary.py`
 
 - First, copy the trade output from the strategy into a file, say `trades.txt`
 - Next run the script with a desired balance and risk tolerance per trade.
@@ -121,13 +130,9 @@ optional arguments:
 
 - Example: `./ema-adx.py --stage backtest --end 2021/05/27 --start 2021/04/15`
 
-
 ## Development
 
 ```bash
 pip3 install pip-tools
 pip-compile requirements.in > requirements.txt
 ```
-
-
-

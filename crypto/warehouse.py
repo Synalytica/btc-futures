@@ -34,8 +34,7 @@ class Warehouse:
         # set the topics to listen and dump
         # NOTE: expand on this as data size increases
         self.topics = [
-            "crypto.futures.tick.btcusdt",
-            "crypto.futures.ohlc.btcusdt"
+            "crypto.tickers.#"
         ]
 
     async def run(self):
@@ -62,11 +61,10 @@ class Warehouse:
     async def on_message(self, message: IncomingMessage):
         """Process the message as it is delivered"""
         async with message.process():
-            # TODO: load data into relevant queue depending on
             data = json.loads(message.body, cls=EnhancedJSONDecoder)
-            if 'tick' in message.routing_key:
+            if '.tick.' in message.routing_key:
                 self.ticks.put_nowait(data)
-            elif 'ohlc' in message.routing_key:
+            elif '.ohlc.' in message.routing_key and len(message.routing_key.split(".")) == 6:
                 if (isinstance(data, list)):
                     [self.ohlc.put_nowait(datapoint) for datapoint in data]
                 else:

@@ -79,7 +79,7 @@ class Stream:
             asyncio.ensure_future(self.exchange.publish(Message(
                 json.dumps(datapoint, cls=EnhancedJSONEncoder).encode(),
                 delivery_mode=DeliveryMode.PERSISTENT
-            ), routing_key=f'crypto.futures.tick.{self.currency.lower()}'), loop=self.loop)
+            ), routing_key=f'crypto.tickers.futures.tick.{self.currency.lower()}'), loop=self.loop)
 
             if timestamp.second:
                 self.candles[-1].append(datapoint)
@@ -109,7 +109,7 @@ class Stream:
         asyncio.ensure_future(self.exchange.publish(Message(
             json.dumps(candle, cls=EnhancedJSONEncoder).encode(),
             delivery_mode=DeliveryMode.PERSISTENT
-        ), routing_key=f'crypto.futures.ohlc.{self.currency.lower()}'), loop=self.loop)
+        ), routing_key=f'crypto.tickers.futures.ohlc.1m.{self.currency.lower()}'), loop=self.loop)
         self.cur_candle = list()
 
     async def run(self):

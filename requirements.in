@@ -5,3 +5,4 @@ twisted
 asyncpg
 aio_pika
 aiohttp[speedups]
+throttler

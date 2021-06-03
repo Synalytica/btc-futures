@@ -23,3 +23,14 @@ class Stage(str, Enum):
 
     def __repr__(self):
         return self.value
+
+
+class MessageCounter(int, Enum):
+    """Handles Message Counts"""
+
+    RECEIVE = -1
+    ADD = 1
+    RESET = 0
+
+    def __repr__(self):
+        return self.value

@@ -5,6 +5,7 @@
 from datetime import datetime, timedelta
 import json
 import os
+import uuid
 
 from aio_pika import connect, IncomingMessage, ExchangeType, Message, DeliveryMode
 import asyncio
@@ -21,8 +22,8 @@ class Strategy:
         name: str,
         stage: Stage,
         loop: asyncio.AbstractEventLoop = asyncio.get_event_loop(),
-        currency: str = "btcusdt",
-        asset: str = "crypto",
+        asset: str = "btcusdt",
+        asset_class: str = "crypto",
         asset_type: str = "futures",
         start_date: datetime = "",
         end_date: datetime = "",
@@ -30,8 +31,8 @@ class Strategy:
         self.name = name
         self.loop = loop
         self.stage = Stage[stage]
-        self.currency = currency
         self.asset = asset
+        self.asset_class = asset_class
         self.asset_type = asset_type
         self.inPosition: bool = False
         self.DATABASE_URI: str = os.getenv(
@@ -39,6 +40,10 @@ class Strategy:
         )
         self.RABBIT_URI: str = os.getenv("RABBIT_URI", "amqp://guest:guest@localhost/")
         self.sigGenerated: bool = False
+
+        # TODO: Generate IDs using proper methods from config
+        self.versionID = uuid.uuid4().hex
+        self.strategyID = uuid.uuid4().hex
 
         self.start_date = start_date
         self.end_date = end_date
@@ -70,15 +75,20 @@ class Strategy:
         await self.bind_queues()
 
         if self.stage == Stage.BACKTEST:
+            publish_data = {
+                "date_interval": [self.start_date, self.end_date],
+                "asset": self.asset,
+                "frequency": "1m",
+                "asset_type": self.asset_type,
+                "versionID": self.versionID,
+            }
             asyncio.ensure_future(
                 self.exchange.publish(
                     Message(
-                        json.dumps(
-                            [self.start_date, self.end_date], cls=EnhancedJSONEncoder
-                        ).encode(),
+                        json.dumps(publish_data, cls=EnhancedJSONEncoder).encode(),
                         delivery_mode=DeliveryMode.PERSISTENT,
                     ),
-                    routing_key=f"{self.asset}.{self.asset_type}.ohlc.{self.currency}",
+                    routing_key=f"{self.asset_class}.meta.{self.strategyID}.requests.{self.versionID}",
                 ),
                 loop=self.loop,
             )
@@ -88,12 +98,16 @@ class Strategy:
         self.connection = await connect(self.RABBIT_URI, loop=self.loop)
         channel = await self.connection.channel()
         if self.stage == Stage.LIVE:
-            self.ohlc_topic = f"{self.asset}.{self.asset_type}.ohlc.{self.currency}"
-            self.tick_topic = f"{self.asset}.{self.asset_type}.tick.{self.currency}"
+            self.ohlc_topic = (
+                f"{self.asset_class}.tickers.{self.asset_type}.ohlc.1m.{self.asset}"
+            )
+            self.tick_topic = (
+                f"{self.asset_class}.tickers.{self.asset_type}.tick.{self.asset}"
+            )
             self.exchange_name = "tickers"
         elif self.stage == Stage.BACKTEST:
-            self.ohlc_topic = f"{self.asset}.{self.asset_type}.ohlc.{self.currency}.db"
-            self.tick_topic = f"{self.asset}.{self.asset_type}.tick.{self.currency}.db"
+            self.ohlc_topic = f"{self.asset_class}.tickers.{self.asset_type}.ohlc.1m.{self.asset}.{self.versionID}"
+            self.tick_topic = f"{self.asset_class}.tickers.{self.asset_type}.tick.{self.asset}.{self.versionID}"
             self.exchange_name = "database"
 
         self.exchange = await channel.declare_exchange(
@@ -118,9 +132,9 @@ class Strategy:
         """Callback function which routes message to necessary function"""
         async with message.process():
             data = json.loads(message.body, cls=EnhancedJSONDecoder)
-            if "tick" in message.routing_key:
+            if ".tick." in message.routing_key:
                 await self.on_tick(data)
-            elif "ohlc" in message.routing_key:
+            elif ".ohlc." in message.routing_key:
                 await self.on_candle(data)
 
     async def on_tick(self, data: dict) -> None:
@@ -138,6 +152,7 @@ class Strategy:
         if self.stage == Stage.LIVE:
             self.genSig(data)
         elif self.stage == Stage.BACKTEST:
+            data = list({frozenset(item.items()): item for item in data}.values())
             sorted_data = sorted(data, key=lambda k: k["t"])
             self.backtest(sorted_data)
 

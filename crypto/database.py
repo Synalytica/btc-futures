@@ -6,7 +6,7 @@
 
 """
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import reduce
 import json
 from operator import add
@@ -38,7 +38,7 @@ class Database:
         self.N_LIM = 1000
         self.BASE_URL = f"https://api.binance.com/api/v1/klines"
 
-        self.topics = ["crypto.*.ohlc.*"]
+        self.topics = ["crypto.meta.*.requests.*"]
 
     async def run(self) -> None:
         """Intialize and start the queue listeners"""
@@ -64,19 +64,15 @@ class Database:
         """Process the message as it is delivered"""
         async with message.process():
             data = json.loads(message.body, cls=EnhancedJSONDecoder)
-            message_params = message.routing_key.split(".")
             await self.query_ohlc_data(
                 data,
                 url=self.BASE_URL
-                + f"?symbol={message_params[-1].upper()}&interval=1m&limit={self.N_LIM}",
-                asset_type=message_params[1],
-                currency=message_params[-1],
+                + f"?symbol={data['asset'].upper()}&interval={data['frequency']}&limit={self.N_LIM}",
             )
 
-    async def api_time_query(
-        self, timestamps: list, url: str, asset_type: str, currency: str
-    ) -> List[Dict]:
+    async def api_time_query(self, data: dict, url: str) -> List[Dict]:
         """Get timestamp for query of the remaining data for backtest"""
+        timestamps = data["date_interval"]
         if not all(timestamps):
             return []
 
@@ -109,24 +105,22 @@ class Database:
 
         if timestamps[-1] < _timestamps[0] or timestamps[0] > _timestamps[-1]:
             new_candles = await self.gen_candles(
-                timestamps[0], timestamps[-1], url, asset_type, currency
+                timestamps[0], timestamps[-1], url, data
             )
         elif timestamps[0] < _timestamps[0] and timestamps[-1] <= _timestamps[-1]:
             new_candles = await self.gen_candles(
-                timestamps[0], _timestamps[0], url, asset_type, currency
+                timestamps[0], _timestamps[0], url, data
             )
         elif timestamps[0] >= _timestamps[0] and timestamps[-1] > _timestamps[-1]:
             new_candles = await self.gen_candles(
-                _timestamps[-1], timestamps[-1], url, asset_type, currency
+                _timestamps[-1], timestamps[-1], url, data
             )
         elif timestamps[0] < _timestamps[0] and timestamps[-1] > _timestamps[-1]:
             new_candles = await self.gen_candles(
-                timestamps[0], _timestamps[0], url, asset_type, currency
+                timestamps[0], _timestamps[0], url, data
             )
             new_candles.extend(
-                await self.gen_candles(
-                    _timestamps[-1], timestamps[-1], url, asset_type, currency
-                )
+                await self.gen_candles(_timestamps[-1], timestamps[-1], url, data)
             )
 
         return new_candles
@@ -142,8 +136,7 @@ class Database:
         start_time: datetime.date,
         end_time: datetime.date,
         url: str,
-        asset_type: str,
-        currency: str,
+        data: dict,
     ) -> List[Dict]:
         """Generate list of ohlc candles"""
         start_time: int = int(
@@ -189,25 +182,25 @@ class Database:
                         json.dumps(_candles, cls=EnhancedJSONEncoder).encode(),
                         delivery_mode=DeliveryMode.PERSISTENT,
                     ),
-                    routing_key=f"crypto.{asset_type}.ohlc.{currency}",
+                    routing_key=f"crypto.tickers.{data['asset_type']}.ohlc.{data['frequency']}.{data['asset']}",
                 ),
                 loop=self.loop,
             )
 
             return _candles
 
-    async def query_ohlc_data(
-        self, data: list, url: str, asset_type: str, currency: str
-    ) -> None:
+    async def query_ohlc_data(self, data: dict, url: str) -> None:
         """Get the past ohlc data from the DB and API"""
         _candles = []
-        if all(data):
+        if all(data["date_interval"]):
+            timestamps = data["date_interval"]
+            timestamps[-1] += timedelta(1)
             async with self.pool.acquire() as conn:
                 async with conn.transaction():
                     async for row in conn.cursor(
                         f"""
                                                     SELECT * from ohlc
-                                                    WHERE timestamp >= '{data[0]}' AND timestamp < '{data[-1]}'
+                                                    WHERE timestamp >= '{timestamps[0]}' AND timestamp < '{timestamps[-1]}'
                                                     ORDER BY timestamp;
                                                     """
                     ):
@@ -222,7 +215,7 @@ class Database:
                         }
                         _candles.append(datapoint)
 
-        new_old_candles = await self.api_time_query(data, url, asset_type, currency)
+        new_old_candles = await self.api_time_query(data, url)
         new_old_candles.extend(_candles)
 
         # Send new + old data back to calling/listening function
@@ -232,7 +225,7 @@ class Database:
                     json.dumps(new_old_candles, cls=EnhancedJSONEncoder).encode(),
                     delivery_mode=DeliveryMode.PERSISTENT,
                 ),
-                routing_key=f"crypto.{asset_type}.ohlc.{currency}.db",
+                routing_key=f"crypto.tickers.{data['asset_type']}.ohlc.{data['frequency']}.{data['asset']}.{data['versionID']}",
             ),
             loop=self.loop,
         )
