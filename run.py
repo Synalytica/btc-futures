@@ -6,6 +6,7 @@ import sys
 
 from binance.exceptions import BinanceAPIException
 
+from crypto.database import Database
 from crypto.stream import Stream
 from crypto.warehouse import Warehouse
 
@@ -38,27 +39,48 @@ def start_warehouse():
         sys.stderr.write(f"[error] Warehouse: {e}\n")
 
 
+def start_database_stream():
+    """Initialize the streaming of data from db"""
+    policy = asyncio.get_event_loop_policy()
+    policy.set_event_loop(policy.new_event_loop())
+    try:
+        loop = asyncio.get_event_loop()
+        database = Database(loop)
+        loop.create_task(database.run())
+        loop.run_forever()
+    except Exception as e:
+        sys.stderr.write(f"[error] Database: {e}\n")
+
+
 def main():
     """Declare and start all relevant processes"""
 
-    stream_proc = mp.Process(target=start_stream, name='STREAM', daemon=True)
-    warehouse_proc = mp.Process(
-        target=start_warehouse, name='WAREHOUSE', daemon=True)
+    stream_proc = mp.Process(target=start_stream, name="STREAM", daemon=True)
+    warehouse_proc = mp.Process(target=start_warehouse, name="WAREHOUSE", daemon=True)
+    database_proc = mp.Process(
+        target=start_database_stream, name="DATABASE", daemon=True
+    )
 
     # NOTE: add all defined processes here
     processes = [
         warehouse_proc,
         stream_proc,
+        database_proc,
     ]
 
     # start all the processes
-    [(print(f"[{idx + 1}/{len(processes)}] Process {process.name} starting ..."), process.start())
-        for idx, process in enumerate(processes)]
+    [
+        (
+            print(f"[{idx + 1}/{len(processes)}] Process {process.name} starting ..."),
+            process.start(),
+        )
+        for idx, process in enumerate(processes)
+    ]
 
     # wait for processess to all exit before quitting the main program
     [_.join() for _ in processes]
 
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')
+    mp.set_start_method("spawn")
     sys.exit(main())

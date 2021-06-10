@@ -135,3 +135,6 @@ trades.txt
 # env loading
 .envrc
 .env
+
+# editor
+.vscode
