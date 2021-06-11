@@ -25,6 +25,18 @@ class Stage(str, Enum):
         return self.value
 
 
+class StrategyType(str, Enum):
+    """Type of the Strategy"""
+
+    TREND = "trend"
+    BREAKOUT = "breakout"
+    REVERSAL = "reversal"
+    SWING = "swing"
+
+    def __repr__(self):
+        return self.value
+
+
 class MessageCounter(int, Enum):
     """Handles Message Counts"""
 

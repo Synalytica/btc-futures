@@ -45,7 +45,7 @@ docker-compose up
 ### `./utils/gen_chart_data.py`
 
 ```bash
-usage: gen_chart_data.py [-h] [-i INPUT] [-c CANDLES] [-o OUTPUT] [--asset_class ASSET CLASS] [-t TYPE] [-a ASSET] [-f FREQUENCY] 
+usage: gen_chart_data.py [-h] [-i INPUT] [-c CANDLES] [-o OUTPUT] [--asset_class ASSET CLASS] [-t TYPE] [-a ASSET] [-f FREQUENCY]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -119,16 +119,18 @@ optional arguments:
 ### `ema-adx.py`
 
 ```bash
-usage: ema-adx.py [-h] [--stage STAGE] [--start START] [--end END]
+usage: ema-adx.py [-h] [-c config] [--stage STAGE]
 
 optional arguments:
-  -h, --help           show this help message and exit
-  --stage STAGE        Execution Stage ["backtest", "optimize", "live", "paper", "archive", "liquidate"]
-  --start START        Start date for Backtest [YYYY/MM/DD]
-  --end END            End date for Backtest [YYYY/MM/DD]
+  -h, --help           
+                       show this help message and exit
+  -c CONFIG, --config CONFIG           
+                       Path to Config file containing params
+  -s STAGE, --stage STAGE        
+                       Execution Stage ["backtest", "optimize", "live", "paper", "archive", "liquidate"]
 ```
 
-- Example: `./ema-adx.py --stage backtest --end 2021/05/27 --start 2021/04/15`
+- Example: `./ema-adx.py -c configs/default.cfg --stage backtest`
 
 ## Development
 

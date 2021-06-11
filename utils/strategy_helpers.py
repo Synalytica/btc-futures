@@ -3,6 +3,7 @@
     :brief: convenience functions for strategy help
 """
 from datetime import datetime, timedelta
+import hashlib
 import json
 import os
 import uuid
@@ -11,7 +12,7 @@ from aio_pika import connect, IncomingMessage, ExchangeType, Message, DeliveryMo
 import asyncio
 
 from .encoder import EnhancedJSONDecoder, EnhancedJSONEncoder
-from .enums import Stage
+from .enums import Stage, StrategyType
 
 
 class Strategy:
@@ -19,21 +20,17 @@ class Strategy:
 
     def __init__(
         self,
-        name: str,
         stage: Stage,
         loop: asyncio.AbstractEventLoop = asyncio.get_event_loop(),
-        asset: str = "btcusdt",
-        asset_class: str = "crypto",
-        asset_type: str = "futures",
-        start_date: datetime = "",
-        end_date: datetime = "",
+        params: dict = None,
     ):
-        self.name = name
+        self.name = params["name"]
+        self.strategy_type = StrategyType(params["strategy_type"].lower())
         self.loop = loop
         self.stage = Stage[stage]
-        self.asset = asset
-        self.asset_class = asset_class
-        self.asset_type = asset_type
+        self.asset = params["asset"]
+        self.asset_class = params["asset_class"]
+        self.asset_type = params["asset_type"]
         self.inPosition: bool = False
         self.DATABASE_URI: str = os.getenv(
             "DATABASE_URI", "postgresql://postgres@localhost/test"
@@ -41,12 +38,14 @@ class Strategy:
         self.RABBIT_URI: str = os.getenv("RABBIT_URI", "amqp://guest:guest@localhost/")
         self.sigGenerated: bool = False
 
-        # TODO: Generate IDs using proper methods from config
-        self.versionID = uuid.uuid4().hex
+        self.versionID = hashlib.md5(
+            json.dumps(params, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        # TODO: Generate Strategy ID using proper methods from config
         self.strategyID = uuid.uuid4().hex
 
-        self.start_date = start_date
-        self.end_date = end_date
+        self.start_date = params["start_date"]
+        self.end_date = params["end_date"]
         if self.stage == Stage.BACKTEST:
             if self.start_date == "" and self.end_date != "":
                 self.end_date = datetime.strptime(self.end_date, "%Y/%m/%d")
@@ -139,6 +138,7 @@ class Strategy:
 
     async def on_tick(self, data: dict) -> None:
         """Process data every tick"""
+        print("TICK: ", data)
         if self.sigGenerated and not self.inPosition:
             if self.checkEntry(data):
                 self.inPosition = True
@@ -149,6 +149,7 @@ class Strategy:
 
     async def on_candle(self, data: dict) -> None:
         """Process data every candle"""
+        print("CANDLE: ", data)
         if self.stage == Stage.LIVE:
             self.genSig(data)
         elif self.stage == Stage.BACKTEST:
@@ -158,16 +159,20 @@ class Strategy:
 
     def checkEntry(self, data: dict) -> None:
         """Checks entry after signal is generated"""
-        raise NotImplementedError
+        # raise NotImplementedError
+        pass
 
     def checkExit(self, data: dict) -> None:
         """Checks exit"""
-        raise NotImplementedError
+        # raise NotImplementedError
+        pass
 
     def genSig(self, data: dict) -> None:
         """Generates trade signals"""
-        raise NotImplementedError
+        # raise NotImplementedError
+        pass
 
     def backtest(self, data: dict) -> None:
         """Backtests the strategy on past ohlc data"""
-        raise NotImplementedError
+        # raise NotImplementedError
+        pass
