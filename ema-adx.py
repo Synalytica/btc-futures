@@ -17,8 +17,6 @@ loop = asyncio.get_event_loop()
 
 
 async def main():
-    global args, sections
-    sections, args = collect_configs()
     ema_adx = Strategy(
         stage=args.stage.upper(),
         loop=loop,
@@ -28,5 +26,6 @@ async def main():
 
 
 if __name__ == "__main__":
+    sections, args = collect_configs()
     loop.create_task(main())
     loop.run_forever()

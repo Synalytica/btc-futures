@@ -138,7 +138,6 @@ class Strategy:
 
     async def on_tick(self, data: dict) -> None:
         """Process data every tick"""
-        print("TICK: ", data)
         if self.sigGenerated and not self.inPosition:
             if self.checkEntry(data):
                 self.inPosition = True
@@ -149,7 +148,6 @@ class Strategy:
 
     async def on_candle(self, data: dict) -> None:
         """Process data every candle"""
-        print("CANDLE: ", data)
         if self.stage == Stage.LIVE:
             self.genSig(data)
         elif self.stage == Stage.BACKTEST:
@@ -159,20 +157,16 @@ class Strategy:
 
     def checkEntry(self, data: dict) -> None:
         """Checks entry after signal is generated"""
-        # raise NotImplementedError
-        pass
+        raise NotImplementedError
 
     def checkExit(self, data: dict) -> None:
         """Checks exit"""
-        # raise NotImplementedError
-        pass
+        raise NotImplementedError
 
     def genSig(self, data: dict) -> None:
         """Generates trade signals"""
-        # raise NotImplementedError
-        pass
+        raise NotImplementedError
 
     def backtest(self, data: dict) -> None:
         """Backtests the strategy on past ohlc data"""
-        # raise NotImplementedError
-        pass
+        raise NotImplementedError

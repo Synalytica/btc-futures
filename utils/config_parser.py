@@ -18,8 +18,8 @@ def collect_configs(argv=None) -> dict:
         description=__doc__,  # printed with -h/--help
         # Don't mess with format of description
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        # Turn off help
-        add_help=False,
+        # Turn on help
+        add_help=True,
     )
     conf_parser.add_argument(
         "-c",
