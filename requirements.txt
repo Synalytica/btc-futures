@@ -76,12 +76,12 @@ pamqp==2.3.0
     # via aiormq
 pandas==1.2.2
     # via -r requirements.in
-pyasn1-modules==0.2.8
-    # via service-identity
 pyasn1==0.4.8
     # via
     #   pyasn1-modules
     #   service-identity
+pyasn1-modules==0.2.8
+    # via service-identity
 pycares==3.1.1
     # via aiodns
 pycparser==2.20
@@ -127,7 +127,7 @@ typing-extensions==3.7.4.3
     # via aiohttp
 tzlocal==2.1
     # via dateparser
-ujson==4.0.2
+ujson==5.2.0
     # via python-binance
 urllib3==1.26.3
     # via
@@ -138,7 +138,7 @@ yarl==1.6.3
     #   aio-pika
     #   aiohttp
     #   aiormq
-zope.interface==5.2.0
+zope-interface==5.2.0
     # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
