@@ -62,7 +62,7 @@ idna==2.10
     #   hyperlink
     #   requests
     #   yarl
-incremental==17.5.0
+incremental==22.10.0
     # via twisted
 multidict==5.1.0
     # via
@@ -76,18 +76,16 @@ pamqp==2.3.0
     # via aiormq
 pandas==1.2.2
     # via -r requirements.in
-pyasn1-modules==0.2.8
-    # via service-identity
 pyasn1==0.4.8
     # via
     #   pyasn1-modules
     #   service-identity
+pyasn1-modules==0.2.8
+    # via service-identity
 pycares==3.1.1
     # via aiodns
 pycparser==2.20
     # via cffi
-pyhamcrest==2.0.2
-    # via twisted
 pyopenssl==20.0.1
     # via python-binance
 python-binance==0.7.9
@@ -117,14 +115,16 @@ ta-lib==0.4.19
     # via -r requirements.in
 throttler==1.2.1
     # via -r requirements.in
-twisted==20.3.0
+twisted==22.10.0
     # via
     #   -r requirements.in
     #   python-binance
 txaio==20.12.1
     # via autobahn
 typing-extensions==3.7.4.3
-    # via aiohttp
+    # via
+    #   aiohttp
+    #   twisted
 tzlocal==2.1
     # via dateparser
 ujson==4.0.2
@@ -138,7 +138,7 @@ yarl==1.6.3
     #   aio-pika
     #   aiohttp
     #   aiormq
-zope.interface==5.2.0
+zope-interface==5.2.0
     # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
