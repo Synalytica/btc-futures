@@ -1,21 +1,25 @@
-MIT License
-
-Copyright (c) 2021 C M Sanjay Krishna
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Synalytica Attribution License Agreement (SALA)
+Version 1.0
+Copyright (c) 2023 Synalytica. All rights reserved.
+Email: synalytica@gmail.com
+This license agreement ("Agreement") is a legally binding contract between you ("Licensee") and Synalytica ("Licensor") for the use, modification, and distribution of the software and associated documentation files (collectively, the "Software") provided by Licensor. By using the Software, Licensee agrees to be bound by the terms and conditions of this Agreement.
+License Grant
+Subject to the terms and conditions of this Agreement, Licensor grants Licensee a worldwide, non-exclusive, royalty-free, non-transferable, non-sublicensable, and revocable license to use, modify, and distribute the Software. Licensee shall give attribution to Licensor in all derivative works and modifications.
+Intellectual Property Rights
+All rights, title, and interest in and to the Software, including but not limited to copyright, trademark, patent, and trade secret rights, are and shall remain the exclusive property of Licensor. Licensee acknowledges and agrees that it has no right, title, or interest in or to the Software, except as expressly provided in this Agreement.
+Restrictions
+Licensee shall not, directly or indirectly:
+(a) use the name "Synalytica" or any confusingly similar name or logo in connection with the Software, except as expressly authorized in writing by Licensor;
+(b) remove or modify any attribution notices contained in the Software or its documentation;
+(c) use the trademarks, trade names, service marks, or logos of Licensor or its affiliates, except as expressly authorized in writing by Licensor.
+Termination
+This Agreement is effective until terminated. Licensor may terminate this Agreement immediately and without notice if Licensee breaches any term or condition of this Agreement. Upon termination, Licensee shall cease all use of the Software and destroy all copies of the Software in its possession or control.
+Warranty Disclaimer
+The Software is provided "AS IS" and without warranty of any kind. Licensor disclaims all warranties, express or implied, including but not limited to any warranties of merchantability, fitness for a particular purpose, title, and non-infringement.
+Limitation of Liability
+In no event shall Licensor be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, revenue, data, or data use, arising out of or related to this Agreement, whether in an action in contract, tort, or otherwise, even if advised of the possibility of such damages.
+Governing Law
+This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which Licensor is located, without regard to its conflicts of law provisions.
+Entire Agreement
+This Agreement constitutes the entire agreement between the parties with respect to the subject matter hereof and supersedes all prior and contemporaneous agreements, understandings, negotiations, and discussions, whether oral or written, of the parties.
+If you do not agree to the terms of this Agreement, you must not use the Software
